@@ -89,7 +89,8 @@ class GUI:
         self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
-        self.add_btn(text="Start", color="#FFFF00", x=150, y=150, command=Timer.start_timers)
+        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)
         
         # config
         logging.info("configuring GUI")
