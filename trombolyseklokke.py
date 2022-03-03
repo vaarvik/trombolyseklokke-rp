@@ -2,22 +2,30 @@ from tkinter import *
 import logging
 import time
 
+class Text:
+    def __init__(self, text, x, y, window):
+        self.x = x
+        self.y = y
+        self.window = window
+        self.label = Label(window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
+        self.label.place(x=x, y=y)
+    
+    def update(self, text):
+        self.label = Label(self.window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
+        self.label.place(x=self.x, y=self.y)
+
 class Timer:
     def __init__(self, gui):
         logging.info("creating Timer")
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.update_text()
+        self.text = Text(text=self.totalSeconds, x=self.gui.width / 2, y=self.gui.height / 2, window=self.GUIWindow)
         self.update_timer()
         
-    def update_text(self):
-        label = Label(self.GUIWindow, text=self.totalSeconds, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
-        label.place(x=self.gui.width / 2, y=self.gui.height / 2)
-    
     def update_timer(self):
         self.totalSeconds += 1
-        self.update_text()
+        self.text.update(self.totalSeconds)
         self.GUIWindow.after(1000, self.update_timer)
 
 class GUI:
