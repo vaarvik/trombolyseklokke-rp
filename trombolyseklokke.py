@@ -41,8 +41,6 @@ class Timer:
         return minutes + ":" + seconds
     
     def update_timer(self):
-        if(self.totalSeconds > 5):
-            self.reset_timer()
         self.totalSeconds += 1
         self.text.update(self.format_time())
         self.GUIWindow.after(1000, self.update_timer)
@@ -58,6 +56,8 @@ class GUI:
         self.height = self.window.winfo_screenheight() 
         self.totalTimer = Timer(self, 10, 10)
         self.sequenceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=self.sequenceTimer.reset_timer)
+        
         
         # config
         logging.info("configuring GUI")
@@ -75,6 +75,10 @@ class GUI:
         
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
+        
+    def add_btn(self, text, color, x, y, command):
+        btn = Button(self.window, text=text, command=command, bg=color)
+        btn.place(x=x, y=y)
 
 logging.basicConfig(level=logging.INFO)
 
