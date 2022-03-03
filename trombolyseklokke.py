@@ -22,6 +22,8 @@ class Timer:
         self.GUIWindow = gui.window
         self.gui = gui
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
+        self.paused = False
+        
         self.update_timer()
         Timer.timers.append(self)
         
@@ -44,17 +46,28 @@ class Timer:
     def update_timer(self):
         self.totalSeconds += 1
         self.text.update(self.format_time())
-        self.GUIWindow.after(1000, self.update_timer)
+        if(not self.paused):
+            self.GUIWindow.after(1000, self.update_timer)
     
     def reset_timer(self):
         self.totalSeconds = 0
+    
+    def pause_timer(self):
+        self.paused = True
         
     def reset_timers():        
         for timer in Timer.timers:
             timer.reset_timer()
+            timer.pause_timer()
+        
+    def pause_timers():        
+        for timer in Timer.timers:
+            timer.pause_timer()
+    
 
 Timer.timers = []
 Timer.reset_timers = staticmethod(Timer.reset_timers)
+Timer.pause_timers = staticmethod(Timer.pause_timers)
 
 class GUI:
     def __init__(self):
@@ -65,6 +78,7 @@ class GUI:
         self.totalTimer = Timer(self, 10, 10)
         self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
+        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         
         # config
         logging.info("configuring GUI")
