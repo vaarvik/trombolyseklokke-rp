@@ -16,12 +16,12 @@ class Text:
         self.label.place(x=self.x, y=self.y)
 
 class Timer:
-    def __init__(self, gui):
+    def __init__(self, gui, x, y):
         logging.info("creating Timer")
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.text = Text(text=self.totalSeconds, x=self.gui.width / 2, y=self.gui.height / 2, window=self.GUIWindow)
+        self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
         self.update_timer()
         
     def format_time(self):
@@ -39,10 +39,16 @@ class Timer:
             seconds = str(seconds)
             
         return minutes + ":" + seconds
+    
     def update_timer(self):
+        if(self.totalSeconds > 5):
+            self.reset_timer()
         self.totalSeconds += 1
         self.text.update(self.format_time())
         self.GUIWindow.after(1000, self.update_timer)
+    
+    def reset_timer(self):
+        self.totalSeconds = 0
 
 class GUI:
     def __init__(self):
@@ -50,7 +56,8 @@ class GUI:
         self.title = "Trombolyseklokke"
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight() 
-        self.totalTimer = Timer(self)
+        self.totalTimer = Timer(self, 10, 10)
+        self.sequenceTimer = Timer(self, self.width / 2, self.height / 2)
         
         # config
         logging.info("configuring GUI")
