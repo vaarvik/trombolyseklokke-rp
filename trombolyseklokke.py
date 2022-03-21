@@ -22,7 +22,9 @@ class Timer:
         self.GUIWindow = gui.window
         self.gui = gui
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
-        self.update_timer()
+        self.paused = True
+        
+        Timer.timers.append(self)
         
     def format_time(self):
         seconds = self.totalSeconds % 60
@@ -41,14 +43,41 @@ class Timer:
         return minutes + ":" + seconds
     
     def update_timer(self):
-        if(self.totalSeconds > 5):
-            self.reset_timer()
         self.totalSeconds += 1
         self.text.update(self.format_time())
-        self.GUIWindow.after(1000, self.update_timer)
+        if(not self.paused):
+            self.GUIWindow.after(1000, self.update_timer)
     
+    def start_timer(self):
+        if(self.paused):
+            self.paused = False
+            self.update_timer()
+        
     def reset_timer(self):
         self.totalSeconds = 0
+    
+    def pause_timer(self):
+        self.paused = True
+        
+    def reset_timers():        
+        for timer in Timer.timers:
+            timer.reset_timer()
+            timer.pause_timer()
+        
+    def pause_timers():        
+        for timer in Timer.timers:
+            timer.pause_timer()
+        
+    def start_timers():        
+        for timer in Timer.timers:
+            timer.start_timer()
+    
+# Static Timer variables
+Timer.timers = []
+
+# Static Timer methods
+Timer.reset_timers = staticmethod(Timer.reset_timers)
+Timer.pause_timers = staticmethod(Timer.pause_timers)
 
 class GUI:
     def __init__(self):
@@ -57,7 +86,11 @@ class GUI:
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight() 
         self.totalTimer = Timer(self, 10, 10)
-        self.sequenceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
+        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
+        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)
         
         # config
         logging.info("configuring GUI")
@@ -75,6 +108,10 @@ class GUI:
         
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
+        
+    def add_btn(self, text, color, x, y, command):
+        btn = Button(self.window, text=text, command=command, bg=color)
+        btn.place(x=x, y=y)
 
 logging.basicConfig(level=logging.INFO)
 
