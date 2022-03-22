@@ -78,6 +78,7 @@ Timer.timers = []
 # Static Timer methods
 Timer.reset_timers = staticmethod(Timer.reset_timers)
 Timer.pause_timers = staticmethod(Timer.pause_timers)
+Timer.start_timers = staticmethod(Timer.start_timers)
 
 class GUI:
     def __init__(self):
