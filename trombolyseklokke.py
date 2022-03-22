@@ -2,6 +2,7 @@ from tkinter import *
 import logging
 import time
 import math
+from tkinter import ttk
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -72,6 +73,13 @@ class Timer:
         for timer in Timer.timers:
             timer.start_timer()
     
+class Bar:
+    def __init__(self, orient,length, mode):
+        progressbar = ttk.Progressbar()       
+        progressbar.pack(pady=100)
+        progressbar.start()
+        
+    
 # Static Timer variables
 Timer.timers = []
 
@@ -91,6 +99,10 @@ class GUI:
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
         self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)
+        
+
+        self.progressbar = Bar(HORIZONTAL,500, 'indeterminate')
+        
         
         # config
         logging.info("configuring GUI")
@@ -116,6 +128,3 @@ class GUI:
 logging.basicConfig(level=logging.INFO)
 
 GUI()
-
-
-
