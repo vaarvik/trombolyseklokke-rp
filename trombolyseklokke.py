@@ -75,15 +75,23 @@ class Timer:
             timer.start_timer()
     
 class Bar:
-    def __init__(self, orient,length, mode):
+    def __init__(self, orient,length, mode):        
         self.orient = orient
         self.length = length
         self.mode = mode
         self.progressbar = ttk.Progressbar(orient = self.orient, length = self.length, mode = self.mode)       
-        self.progressbar.pack(pady=100)    
+        self.progressbar.pack(pady=100)
+                   
         
     def start_progressbar(self):
-         self.progressbar.start()     
+         self.progressbar.start()
+    
+    def reset_progressbar(self):         
+        self.progressbar.stop()      
+
+          
+    
+
         
     
 # Static Timer variables
@@ -102,7 +110,7 @@ class GUI:
         self.totalTimer = Timer(self, 10, 10)
         self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
         self.progressbar = Bar(HORIZONTAL,500, 'determinate')
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.progressbar.reset_progressbar()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.progressbar.start_progressbar()])
         self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)        
