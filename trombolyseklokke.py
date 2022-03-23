@@ -1,3 +1,4 @@
+from operator import mod
 from tkinter import *
 import logging
 import time
@@ -75,9 +76,12 @@ class Timer:
     
 class Bar:
     def __init__(self, orient,length, mode):
-        progressbar = ttk.Progressbar()       
-        progressbar.pack(pady=100)
-        progressbar.start()
+        self.orient = orient
+        self.length = length
+        self.mode = mode
+        self.progressbar = ttk.Progressbar(orient = self.orient, length = self.length, mode = self.mode)       
+        self.progressbar.pack(pady=100)        
+        self.progressbar.start(100)       
         
     
 # Static Timer variables
@@ -101,7 +105,7 @@ class GUI:
         self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)
         
 
-        self.progressbar = Bar(HORIZONTAL,500, 'indeterminate')
+        self.progressbar = Bar(HORIZONTAL,500, 'determinate')
         
         
         # config
