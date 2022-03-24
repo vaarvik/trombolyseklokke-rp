@@ -88,14 +88,14 @@ class Bar:
     
     
     def start_progressbar(self):
-         self.progressbar.start()
+        self.progressbar.start()
     
     def pause_progressbar(self):        
         self.var.set(self.var.get())
-        self.progressbar.stop()
-        
+        self.progressbar.stop()        
     
     def reset_progressbar(self):         
+        self.var.set(0)
         self.progressbar.stop()
         
     
@@ -114,7 +114,7 @@ class GUI:
         self.height = self.window.winfo_screenheight() 
         self.totalTimer = Timer(self, 10, 10)
         self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)        
-        self.progressbar = Bar(HORIZONTAL,500, 'determinate', 0, self.seconds_converter(80))
+        self.progressbar = Bar(HORIZONTAL,500, 'determinate', 0, self.seconds_converter(5))
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.progressbar.reset_progressbar()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Timer.pause_timers(), self.progressbar.pause_progressbar()])
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.progressbar.start_progressbar()])
