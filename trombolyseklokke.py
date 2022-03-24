@@ -75,23 +75,21 @@ class Timer:
             timer.start_timer()
     
 class Bar:
-    def __init__(self, orient,length, mode):        
+    def __init__(self, orient,length, mode, value, maximum):        
         self.orient = orient
         self.length = length
         self.mode = mode
-        self.progressbar = ttk.Progressbar(orient = self.orient, length = self.length, mode = self.mode)       
-        self.progressbar.pack(pady=100)
-                   
-        
+        self.maximum = maximum
+        self.value = value
+        self.progressbar = ttk.Progressbar(orient = self.orient, length = self.length, mode = self.mode, value = self.value, maximum = self.maximum)       
+        self.progressbar.pack(pady=100)                  
+      
+    
     def start_progressbar(self):
          self.progressbar.start()
     
     def reset_progressbar(self):         
-        self.progressbar.stop()      
-
-          
-    
-
+        self.progressbar.stop()
         
     
 # Static Timer variables
@@ -108,8 +106,8 @@ class GUI:
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight() 
         self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
-        self.progressbar = Bar(HORIZONTAL,500, 'determinate')
+        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)        
+        self.progressbar = Bar(HORIZONTAL,500, 'determinate', 0, self.seconds_converter(80))
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.progressbar.reset_progressbar()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.progressbar.start_progressbar()])
@@ -128,7 +126,11 @@ class GUI:
         
         # prevents code after this point
         self.window.mainloop()
-        
+    
+    def seconds_converter(self, seconds):
+        maximum = seconds * 1000 / 60 
+        return maximum      
+    
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
         
