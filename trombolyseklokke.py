@@ -21,7 +21,7 @@ class Timer:
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
+        self.text = Text(text=self.format_time(), x=x, y=y, window=self.GUIWindow)
         self.paused = True
 
         Timer.timers.append(self)
