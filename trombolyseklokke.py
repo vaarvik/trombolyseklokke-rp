@@ -23,8 +23,12 @@ class Timer:
         self.gui = gui
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
         self.paused = True
+        self.config()
 
         Timer.timers.append(self)
+
+    def config(self):
+        False
 
     def format_time(self):
         seconds = self.totalSeconds % 60
@@ -81,6 +85,15 @@ Timer.reset_timers = staticmethod(Timer.reset_timers)
 Timer.pause_timers = staticmethod(Timer.pause_timers)
 Timer.start_timers = staticmethod(Timer.start_timers)
 
+# SequenceTimer extends Timer
+class SequenceTimer(Timer):
+    def config(self):
+        self.numSequence = 0
+
+    def next_sequence(self):
+        self.reset_timer()
+        self.numSequence += 1
+
 class GUI:
     def __init__(self):
         self.window = Tk()
@@ -88,11 +101,11 @@ class GUI:
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
         self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.next_sequence)
 
         # config
         logging.info("configuring GUI")
