@@ -2,6 +2,8 @@ from tkinter import *
 import logging
 import time
 import math
+import json
+
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -23,11 +25,13 @@ class Timer:
         self.gui = gui
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
         self.paused = True
-        self.config()
+
+        # Init for children
+        self.init()
 
         Timer.timers.append(self)
 
-    def config(self):
+    def init(self):
         False
 
     def format_time(self):
@@ -87,12 +91,72 @@ Timer.start_timers = staticmethod(Timer.start_timers)
 
 # SequenceTimer extends Timer
 class SequenceTimer(Timer):
-    def config(self):
-        self.numSequence = 0
+    def init(self):
+        # Keep track of the time for each sequence
+        self.times = []
 
     def next_sequence(self):
-        self.reset_timer()
-        self.numSequence += 1
+        self.times.append(self.totalSeconds)
+        self.clear_timer()
+
+    def clear_timer(self):
+        self.totalSeconds = 0
+
+    def reset_timer(self):
+        self.clear_timer()
+        self.times = []
+
+# Static Controller class
+class Controller:
+    def __init__(self):
+        # Read JSON config file
+        configFile = open("./config.json", encoding="utf-8")
+        Controller.config = json.load(configFile)
+        configFile.close()
+
+        Controller.currSequence = 0
+        Controller.sequences = Controller.config["sequences"]
+
+        # Total max time
+        Controller.totalTime = Controller.calc_total_time()
+
+        Controller.done = False
+
+        # Start GUI
+        GUI()
+
+    @staticmethod
+    def calc_total_time():
+        totalTime = 0
+
+        for sequence in Controller.sequences:
+            totalTime += sequence["seconds"]
+
+        return totalTime
+
+    @staticmethod
+    def next_sequence(sequeceTimer):
+        # Don't run again if process is done
+        if(Controller.done):
+            return False
+
+        # Stop if currentSequence has passed the number of sequences given in the config file
+        if(Controller.currSequence + 1 >= len(Controller.sequences)):
+            sequeceTimer.next_sequence()
+            Timer.pause_timers()
+            Controller.done = True
+            # This is where we'll make the GUI show the final results
+            return print("done")
+
+        # Go to the next sequence when program is not done and there is another sequence available
+        sequeceTimer.next_sequence()
+        Controller.currSequence += 1
+
+    @staticmethod
+    def reset():
+        Timer.reset_timers()
+        Controller.currSequence = 0
+        Controller.done = False
 
 class GUI:
     def __init__(self):
@@ -102,10 +166,12 @@ class GUI:
         self.height = self.window.winfo_screenheight()
         self.totalTimer = Timer(self, 10, 10)
         self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Timer.reset_timers)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Controller.reset)
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.next_sequence)
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.next_sequence)
+
+        Text(text=Controller.totalTime, x=500, y=500, window=self.window)
 
         # config
         logging.info("configuring GUI")
@@ -128,6 +194,9 @@ class GUI:
         btn = Button(self.window, text=text, command=command, bg=color)
         btn.place(x=x, y=y)
 
+    def next_sequence(self):
+        Controller.next_sequence(self.sequeceTimer)
+
 logging.basicConfig(level=logging.INFO)
 
-GUI()
+Controller()

@@ -1,0 +1,16 @@
+{
+	"sequences": [
+		{
+			"name": "Blodprøver",
+			"seconds": 60
+		},
+		{
+			"name": "Brief",
+			"seconds": 20
+		},
+		{
+			"name": "CTA",
+			"seconds": 40
+		}
+	]
+}
