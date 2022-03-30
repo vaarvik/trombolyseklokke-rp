@@ -27,7 +27,7 @@ class Timer:
         Timer.timers.append(self)
 
     def format_time(self):
-        seconds = self.totalSeconds % 60
+        seconds = math.floor(self.totalSeconds % 60)
         minutes = math.floor(self.totalSeconds / 60)
 
         if(minutes < 10):
@@ -44,8 +44,8 @@ class Timer:
 
     def update_timer(self):
         if(not self.paused):
-            self.totalSeconds += 1
-            self.GUIWindow.after(1000, self.update_timer)
+            self.totalSeconds += .1
+            self.GUIWindow.after(100, self.update_timer)
 
         self.text.update(self.format_time())
 
