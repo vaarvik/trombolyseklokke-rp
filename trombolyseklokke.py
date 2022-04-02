@@ -2,6 +2,7 @@ from tkinter import *
 import logging
 import time
 import math
+from tinydb import TinyDB, where
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -114,6 +115,16 @@ class GUI:
     def add_btn(self, text, color, x, y, command):
         btn = Button(self.window, text=text, command=command, bg=color)
         btn.place(x=x, y=y)
+
+class DB:
+    def __init__(self):
+        return self.db = TinyDB('db.json')
+
+    def createEntry(self, startTimestamp, sequences, totalSeconds):
+        return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
+
+    def getEntry(self, startTimestamp):
+        return self.db.search(where("startTimestamp") == startTimestamp)
 
 logging.basicConfig(level=logging.INFO)
 
