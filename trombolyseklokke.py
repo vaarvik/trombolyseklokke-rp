@@ -118,7 +118,8 @@ class GUI:
 
 class DB:
     def __init__(self):
-        return self.db = TinyDB('db.json')
+        self.db = TinyDB('db.json')
+        return self.db
 
     def createEntry(self, startTimestamp, sequences, totalSeconds):
         return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
