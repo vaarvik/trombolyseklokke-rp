@@ -31,6 +31,7 @@ class Timer:
 
         Timer.timers.append(self)
 
+    # Used when initializing classes that inherits this class
     def init(self):
         False
 
@@ -93,8 +94,11 @@ class SequenceTimer(Timer):
         # Keep track of the time for each sequence
         self.times = []
 
-    def next_sequence(self):
-        self.times.append(self.totalSeconds)
+    def next_sequence(self, currSequence):
+        self.times.append({
+            "seconds": self.totalSeconds,
+            "name": currSequence["name"]
+        })
         self.clear_timer()
 
     def clear_timer(self):
@@ -113,12 +117,17 @@ class Controller:
         configFile.close()
 
         Controller.currSequence = 0
+        Controller.startTimestamp = 0
         Controller.sequences = Controller.config["sequences"]
 
         # Total max time
         Controller.totalTime = Controller.calc_total_time()
 
         Controller.done = False
+        Controller.inProgress = False
+
+        # Create DB
+        Controller.db = DB()
 
         # Start GUI
         GUI()
@@ -133,28 +142,46 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequeceTimer):
+    def next_sequence(sequeceTimer, totalTimer):
         # Don't run again if process is done
         if(Controller.done):
             return False
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequeceTimer.next_sequence()
+            sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Timer.pause_timers()
             Controller.done = True
+            Controller.inProgress = False
+
+            # Store session data in tiny DB
+            Controller.db.createEntry(Controller.startTimestamp, sequeceTimer.times, totalTimer.totalSeconds)
             # This is where we'll make the GUI show the final results
-            return print("done")
+            return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequeceTimer.next_sequence()
+        sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
         Controller.currSequence += 1
+
+    @staticmethod
+    def start():
+        Timer.start_timers()
+        if(not Controller.inProgress):
+            Controller.startTimestamp = time.time()
+
+        Controller.done = False
+        Controller.inProgress = True
+
+    @staticmethod
+    def pause():
+        Timer.pause_timers()
 
     @staticmethod
     def reset():
         Timer.reset_timers()
         Controller.currSequence = 0
         Controller.done = False
+        Controller.inProgress = False
 
 class GUI:
     def __init__(self):
@@ -165,8 +192,8 @@ class GUI:
         self.totalTimer = Timer(self, 10, 10)
         self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=Controller.reset)
-        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Timer.pause_timers)
-        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Timer.start_timers)
+        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=Controller.pause)
+        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=Controller.start)
         self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.next_sequence)
 
         Text(text=Controller.totalTime, x=500, y=500, window=self.window)
@@ -193,12 +220,11 @@ class GUI:
         btn.place(x=x, y=y)
 
     def next_sequence(self):
-        Controller.next_sequence(self.sequeceTimer)
+        Controller.next_sequence(self.sequeceTimer, self.totalTimer)
 
 class DB:
     def __init__(self):
         self.db = TinyDB('db.json')
-        return self.db
 
     def createEntry(self, startTimestamp, sequences, totalSeconds):
         return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
