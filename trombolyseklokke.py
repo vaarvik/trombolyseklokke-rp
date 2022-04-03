@@ -1,9 +1,9 @@
 from tkinter import *
 import logging
-import time
 import math
 import json
 from tinydb import TinyDB, where
+from datetime import datetime
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -124,7 +124,7 @@ class Controller:
         Controller.totalTime = Controller.calc_total_time()
 
         Controller.done = False
-        Controller.inProgress = False
+        Controller.isRunning = False
 
         # Create DB
         Controller.db = DB()
@@ -144,7 +144,7 @@ class Controller:
     @staticmethod
     def next_sequence(sequeceTimer, totalTimer):
         # Don't run again if process is done
-        if(Controller.done):
+        if(not Controller.isRunning):
             return False
 
         # Stop if currentSequence has passed the number of sequences given in the config file
@@ -152,7 +152,7 @@ class Controller:
             sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Timer.pause_timers()
             Controller.done = True
-            Controller.inProgress = False
+            Controller.isRunning = False
 
             # Store session data in tiny DB
             Controller.db.createEntry(Controller.startTimestamp, sequeceTimer.times, totalTimer.totalSeconds)
@@ -166,22 +166,24 @@ class Controller:
     @staticmethod
     def start():
         Timer.start_timers()
-        if(not Controller.inProgress):
-            Controller.startTimestamp = time.time()
+        if(not Controller.isRunning):
+            currentDateTime = datetime.now()
+            Controller.startTimestamp = datetime.timestamp(currentDateTime)
 
         Controller.done = False
-        Controller.inProgress = True
+        Controller.isRunning = True
 
     @staticmethod
     def pause():
         Timer.pause_timers()
+        Controller.isRunning = False
 
     @staticmethod
     def reset():
         Timer.reset_timers()
         Controller.currSequence = 0
         Controller.done = False
-        Controller.inProgress = False
+        Controller.isRunning = False
 
 class GUI:
     def __init__(self):
