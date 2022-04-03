@@ -3,7 +3,7 @@ import logging
 import time
 import math
 import json
-
+from tinydb import TinyDB, where
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -196,6 +196,17 @@ class GUI:
 
     def next_sequence(self):
         Controller.next_sequence(self.sequeceTimer)
+
+class DB:
+    def __init__(self):
+        self.db = TinyDB('db.json')
+        return self.db
+
+    def createEntry(self, startTimestamp, sequences, totalSeconds):
+        return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
+
+    def getEntry(self, startTimestamp):
+        return self.db.search(where("startTimestamp") == startTimestamp)
 
 logging.basicConfig(level=logging.INFO)
 
