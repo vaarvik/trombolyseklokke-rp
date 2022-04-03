@@ -68,26 +68,24 @@ class Timer:
     def pause_timer(self):
         self.paused = True
 
+    @staticmethod
     def reset_timers():
         for timer in Timer.timers:
             timer.reset_timer()
             timer.pause_timer()
 
+    @staticmethod
     def pause_timers():
         for timer in Timer.timers:
             timer.pause_timer()
 
+    @staticmethod
     def start_timers():
         for timer in Timer.timers:
             timer.start_timer()
 
 # Static Timer variables
 Timer.timers = []
-
-# Static Timer methods
-Timer.reset_timers = staticmethod(Timer.reset_timers)
-Timer.pause_timers = staticmethod(Timer.pause_timers)
-Timer.start_timers = staticmethod(Timer.start_timers)
 
 # SequenceTimer extends Timer
 class SequenceTimer(Timer):
