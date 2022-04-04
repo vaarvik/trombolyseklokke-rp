@@ -12,7 +12,7 @@ class Text:
         self.window = window
         self.label = Label(window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
         self.label.place(x=x, y=y)
-    
+
     def update(self, text):
         self.label = Label(self.window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
         self.label.place(x=self.x, y=self.y)
@@ -25,80 +25,100 @@ class Timer:
         self.gui = gui
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
         self.paused = True
-        
+
         Timer.timers.append(self)
-        
+
     def format_time(self):
         seconds = self.totalSeconds % 60
         minutes = math.floor(self.totalSeconds / 60)
-        
+
         if(minutes < 10):
             minutes = "0" + str(minutes)
         else:
             minutes = str(minutes)
-            
+
         if(seconds < 10):
             seconds = "0" + str(seconds)
         else:
             seconds = str(seconds)
-            
+
         return minutes + ":" + seconds
-    
+
     def update_timer(self):
         self.totalSeconds += 1
         self.text.update(self.format_time())
         if(not self.paused):
             self.GUIWindow.after(1000, self.update_timer)
-    
+
     def start_timer(self):
         if(self.paused):
             self.paused = False
             self.update_timer()
-        
+
     def reset_timer(self):
         self.totalSeconds = 0
-    
+
     def pause_timer(self):
         self.paused = True
-        
-    def reset_timers():        
+
+    def reset_timers():
         for timer in Timer.timers:
             timer.reset_timer()
             timer.pause_timer()
-        
-    def pause_timers():        
+
+    def pause_timers():
         for timer in Timer.timers:
             timer.pause_timer()
-        
-    def start_timers():        
+
+    def start_timers():
         for timer in Timer.timers:
             timer.start_timer()
-    
-class Bar:
-    def __init__(self, orient,length, mode, value, maximum):        
-        self.orient = orient
-        self.length = length
-        self.mode = mode
-        self.maximum = maximum
-        self.value = value
-        self.var = IntVar()
-        self.progressbar = ttk.Progressbar(orient = self.orient, length = self.length, mode = self.mode, value = self.value, maximum = self.maximum, variable=self.var)       
-        self.progressbar.pack(pady=100)                  
-    
-    
-    
-    def start_progressbar(self):
-        self.progressbar.start()
-    
-    def pause_progressbar(self):        
-        self.var.set(self.var.get())
-        self.progressbar.stop()        
-    
-    def reset_progressbar(self):         
-        self.var.set(0)
-        self.progressbar.stop()
-        
-    
+
+class ProgressBar:
+    def __init__(self, gui, x, y, width, height, maxSeconds, bg="black", border=0):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.maxSeconds = maxSeconds
+        self.gui = gui
+        self.passedSeconds = 0
+        self.paused = True
+        self.canvas = Canvas(self.gui.window, width=width, height=height - border, bd=border, highlightthickness=0, relief='ridge', bg=bg)
+        self.canvas.place(x=self.x, y=self.y)
+        self.canvas.create_rectangle(0, 0, self.width, self.height, fill="", outline="grey", width=0)
+        self.fill = self.canvas.create_rectangle(0, 0, self.calc_passed_width(), self.height, fill="blue", outline="", width=0)
+
+    def calc_passed_width(self):
+        if(self.passedSeconds >= self.maxSeconds):
+            return self.width * self.maxSeconds
+
+        currentlyPassed = (self.width / self.maxSeconds) * self.passedSeconds
+        return currentlyPassed
+
+    def incrementPassedTime(self, time):
+        self.passedSeconds += time / 1000
+        self.canvas.coords(self.fill, 0, 0, self.calc_passed_width(), self.height)
+
+    def update(self):
+        if(not self.paused):
+            self.gui.update(self.incrementPassedTime)
+
+    def start(self):
+        if(self.paused):
+            self.paused = False
+            self.update()
+
+    def reset(self):
+        self.passedSeconds = 0
+
+    def pause(self):
+        self.paused = True
+
+    def stop(self):
+        self.pause()
+        self.reset()
+
 # Static Timer variables
 Timer.timers = []
 
@@ -111,39 +131,45 @@ class GUI:
         self.window = Tk()
         self.title = "Trombolyseklokke"
         self.width = self.window.winfo_screenwidth()
-        self.height = self.window.winfo_screenheight() 
+        self.height = self.window.winfo_screenheight()
         self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)        
-        self.progressbar = Bar(HORIZONTAL,500, 'determinate', 0, self.seconds_converter(5))
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.progressbar.reset_progressbar()])
-        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Timer.pause_timers(), self.progressbar.pause_progressbar()])
-        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.progressbar.start_progressbar()])
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=self.sequeceTimer.reset_timer)               
-        
+        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.totalProgressbar = ProgressBar(self, 0, 2, self.width, 2, 60, "grey")
+        self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 600 / 2, self.height / 2 - 40 / 2, 600, 40, 60, border=4)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.totalProgressbar.stop()])
+        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Timer.pause_timers(), self.totalProgressbar.pause()])
+        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.totalProgressbar.start()])
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[self.sequeceTimer.reset_timer(), self.sequenceProgressbar.reset()])
+
         # config
         logging.info("configuring GUI")
-        self.window.wm_title(self.title)       
+        self.window.wm_title(self.title)
         self.window.configure(bg="#000000")
         self.window.attributes("-fullscreen", True)
-        
+
         logging.info("starting GUI")
-        
+
         # temporary hotkey to close window during dev
         self.window.bind("<Escape>", self.end_fullscreen)
-        
+
         # prevents code after this point
         self.window.mainloop()
-    
+
     def seconds_converter(self, seconds):
-        maximum = seconds * 1000 / 60 
-        return maximum      
-    
+        maximum = seconds * 1000 / 60
+        return maximum
+
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
-        
+
     def add_btn(self, text, color, x, y, command):
         btn = Button(self.window, text=text, command=command, bg=color)
         btn.place(x=x, y=y)
+
+    def update(self, cb):
+        update_time = 50
+        cb(update_time)
+        self.window.after(update_time, lambda:self.update(cb))
 
 logging.basicConfig(level=logging.INFO)
 
