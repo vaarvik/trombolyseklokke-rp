@@ -3,7 +3,8 @@ from tkinter import *
 import logging
 import time
 import math
-from tkinter import ttk
+import json
+from tinydb import TinyDB, where
 
 class Text:
     def __init__(self, text, x, y, window):
@@ -26,7 +27,13 @@ class Timer:
         self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
         self.paused = True
 
+        # Init for children
+        self.init()
+
         Timer.timers.append(self)
+
+    def init(self):
+        False
 
     def format_time(self):
         seconds = self.totalSeconds % 60
@@ -45,10 +52,11 @@ class Timer:
         return minutes + ":" + seconds
 
     def update_timer(self):
-        self.totalSeconds += 1
-        self.text.update(self.format_time())
         if(not self.paused):
+            self.totalSeconds += 1
             self.GUIWindow.after(1000, self.update_timer)
+
+        self.text.update(self.format_time())
 
     def start_timer(self):
         if(self.paused):
@@ -125,6 +133,76 @@ Timer.timers = []
 # Static Timer methods
 Timer.reset_timers = staticmethod(Timer.reset_timers)
 Timer.pause_timers = staticmethod(Timer.pause_timers)
+Timer.start_timers = staticmethod(Timer.start_timers)
+
+# SequenceTimer extends Timer
+class SequenceTimer(Timer):
+    def init(self):
+        # Keep track of the time for each sequence
+        self.times = []
+
+    def next_sequence(self):
+        self.times.append(self.totalSeconds)
+        self.clear_timer()
+
+    def clear_timer(self):
+        self.totalSeconds = 0
+
+    def reset_timer(self):
+        self.clear_timer()
+        self.times = []
+
+# Static Controller class
+class Controller:
+    def __init__(self):
+        # Read JSON config file
+        configFile = open("./config.json", encoding="utf-8")
+        Controller.config = json.load(configFile)
+        configFile.close()
+
+        Controller.currSequence = 0
+        Controller.sequences = Controller.config["sequences"]
+
+        # Total max time
+        Controller.totalTime = Controller.calc_total_time()
+
+        Controller.done = False
+
+        # Start GUI
+        GUI()
+
+    @staticmethod
+    def calc_total_time():
+        totalTime = 0
+
+        for sequence in Controller.sequences:
+            totalTime += sequence["seconds"]
+
+        return totalTime
+
+    @staticmethod
+    def next_sequence(sequeceTimer):
+        # Don't run again if process is done
+        if(Controller.done):
+            return False
+
+        # Stop if currentSequence has passed the number of sequences given in the config file
+        if(Controller.currSequence + 1 >= len(Controller.sequences)):
+            sequeceTimer.next_sequence()
+            Timer.pause_timers()
+            Controller.done = True
+            # This is where we'll make the GUI show the final results
+            return print("done")
+
+        # Go to the next sequence when program is not done and there is another sequence available
+        sequeceTimer.next_sequence()
+        Controller.currSequence += 1
+
+    @staticmethod
+    def reset():
+        Timer.reset_timers()
+        Controller.currSequence = 0
+        Controller.done = False
 
 class GUI:
     def __init__(self):
@@ -133,13 +211,13 @@ class GUI:
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
         self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = Timer(self, self.width / 2, self.height / 2)
+        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
         self.totalProgressbar = ProgressBar(self, 0, 2, self.width, 2, 60, "grey")
         self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 600 / 2, self.height / 2 - 40 / 2, 600, 40, 60, border=4)
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Timer.reset_timers(), self.totalProgressbar.stop()])
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Controller.reset(), self.totalProgressbar.stop()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Timer.pause_timers(), self.totalProgressbar.pause()])
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Timer.start_timers(), self.totalProgressbar.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[self.sequeceTimer.reset_timer(), self.sequenceProgressbar.reset()])
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequeceTimer), self.sequenceProgressbar.reset()])
 
         # config
         logging.info("configuring GUI")
@@ -171,6 +249,17 @@ class GUI:
         cb(update_time)
         self.window.after(update_time, lambda:self.update(cb))
 
+class DB:
+    def __init__(self):
+        self.db = TinyDB('db.json')
+        return self.db
+
+    def createEntry(self, startTimestamp, sequences, totalSeconds):
+        return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
+
+    def getEntry(self, startTimestamp):
+        return self.db.search(where("startTimestamp") == startTimestamp)
+
 logging.basicConfig(level=logging.INFO)
 
-GUI()
+Controller()
