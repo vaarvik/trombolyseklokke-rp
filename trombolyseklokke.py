@@ -54,14 +54,11 @@ class Timer:
     def incrementSeconds(self, time):
         self.totalSeconds += time / 1000
 
-    def update_timer(self):
+    def start_timer(self):
         if(Controller.isRunning):
             Controller.update(lambda time:[self.incrementSeconds(time), self.text.update(self.format_time())])
         else:
             self.text.update(self.format_time())
-
-    def start_timer(self):
-        self.update_timer()
 
     def reset_timer(self):
         self.totalSeconds = 0
@@ -106,12 +103,9 @@ class ProgressBar:
         self.passedSeconds += time / 1000
         self.canvas.coords(self.fill, 0, 0, self.calc_passed_width(), self.height)
 
-    def update(self):
+    def start(self):
         if(Controller.isRunning):
             Controller.update(self.incrementPassedTime)
-
-    def start(self):
-        self.update()
 
     def reset(self):
         self.passedSeconds = 0
