@@ -185,7 +185,7 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequeceTimer, totalTimer):
+    def next_sequence(sequeceTimer, totalTimer, sequenceProgressbar):
         # Don't run again if process is done
         if(not Controller.isRunning):
             return False
@@ -204,6 +204,7 @@ class Controller:
 
         # Go to the next sequence when program is not done and there is another sequence available
         sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceProgressbar.reset()
         Controller.currSequence += 1
 
     @staticmethod
@@ -263,7 +264,7 @@ class GUI:
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Controller.reset()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Controller.pause()])
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer), self.sequenceProgressbar.reset()])
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer, self.sequenceProgressbar)])
 
         # config
         logging.info("configuring GUI")
