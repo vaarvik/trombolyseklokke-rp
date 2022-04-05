@@ -172,15 +172,17 @@ class Controller:
         # Total max time
         Controller.totalTime = Controller.calc_total_time()
 
-        Controller.done = False
+        Controller.isDone = False
         Controller.isRunning = False
+        Controller.hasStarted = False
 
         # Create DB
         Controller.db = DB()
 
         # Start GUI
         Controller.gui = GUI()
-        # prevents code after this point
+
+        # preserves code running
         Controller.gui.window.mainloop()
 
     @staticmethod
@@ -202,7 +204,7 @@ class Controller:
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
             sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Controller.pause()
-            Controller.done = True
+            Controller.isDone = True
             Controller.isRunning = False
 
             # Store session data in tiny DB
@@ -216,40 +218,33 @@ class Controller:
         Controller.currSequence += 1
 
     @staticmethod
-    def start():
-        Timer.start_timers()
-        if(not Controller.isRunning):
-            currentDateTime = datetime.now()
-            Controller.startTimestamp = datetime.timestamp(currentDateTime)
-
-        Controller.done = False
-        Controller.isRunning = True
-
-    @staticmethod
-    def pause():
-        Timer.pause_timers()
-        Controller.isRunning = False
-
-    @staticmethod
     def reset():
-        Controller.done = False
+        Controller.isDone = False
         Controller.isRunning = False
+        Controller.hasStarted = False
         Timer.reset_timers()
         ProgressBar.reset_bars()
         Controller.currSequence = 0
 
     @staticmethod
     def start():
-        Controller.isRunning = True
-        Timer.start_timers()
-        ProgressBar.start_bars()
+        if(not Controller.isRunning and not Controller.hasStarted):
+            currentDateTime = datetime.now()
+            Controller.startTimestamp = datetime.timestamp(currentDateTime)
+
+        if(not Controller.isRunning and not Controller.isDone):
+            Controller.isRunning = True
+            Controller.isDone = False
+            Controller.hasStarted = True
+            Timer.start_timers()
+            ProgressBar.start_bars()
 
     @staticmethod
     def pause():
         Controller.isRunning = False
 
     @staticmethod
-    def update(cb):
+    def update(cb=lambda time:[]):
         timeInterval = 50
         if(not Controller.isRunning):
             cb(timeInterval)
