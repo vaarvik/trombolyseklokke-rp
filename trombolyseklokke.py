@@ -129,6 +129,14 @@ class ProgressBar:
 # Static ProgressBar variables
 ProgressBar.bars = []
 
+class SequenceProgressBar(ProgressBar):
+    def calc_passed_width(self):
+        if(self.passedSeconds >= Controller.sequences[Controller.currSequence]["seconds"]):
+            return self.width * Controller.sequences[Controller.currSequence]["seconds"]
+
+        currentlyPassed = (self.width / Controller.sequences[Controller.currSequence]["seconds"]) * self.passedSeconds
+        return currentlyPassed
+
 # SequenceTimer extends Timer
 class SequenceTimer(Timer):
     def init(self):
@@ -185,25 +193,25 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequeceTimer, totalTimer, sequenceProgressbar):
+    def next_sequence(sequenceTimer, totalTimer, sequenceProgressbar):
         # Don't run again if process is done
         if(not Controller.isRunning):
             return False
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+            sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Controller.pause()
             Controller.done = True
             Controller.isRunning = False
 
             # Store session data in tiny DB
-            Controller.db.createEntry(Controller.startTimestamp, sequeceTimer.times, totalTimer.totalSeconds)
+            Controller.db.createEntry(Controller.startTimestamp, sequenceTimer.times, totalTimer.totalSeconds)
             # This is where we'll make the GUI show the final results
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
         sequenceProgressbar.reset()
         Controller.currSequence += 1
 
@@ -258,13 +266,13 @@ class GUI:
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
         self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
-        self.totalProgressbar = ProgressBar(self, 0, 2, self.width, 2, 60, "grey")
-        self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 600 / 2, self.height / 2 - 40 / 2, 600, 40, 60, border=4)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
+        self.totalProgressbar = ProgressBar(self, 0, 2, self.width, 2, Controller.totalTime, "grey")
+        self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 600 / 2, self.height / 2 - 40 / 2, 600, 40, 0, border=4)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Controller.reset()])
         self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Controller.pause()])
         self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer, self.sequenceProgressbar)])
+        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
 
         # config
         logging.info("configuring GUI")
