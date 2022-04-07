@@ -60,14 +60,11 @@ class Timer:
     def incrementSeconds(self, time):
         self.totalSeconds += time / 1000
 
-    def update_timer(self):
+    def start_timer(self):
         if(Controller.isRunning):
             Controller.update(lambda time:[self.incrementSeconds(time), self.text.update(self.format_time())])
         else:
             self.text.update(self.format_time())
-
-    def start_timer(self):
-        self.update_timer()
 
     def reset_timer(self):
         self.totalSeconds = 0
@@ -112,12 +109,9 @@ class ProgressBar:
         self.passedSeconds += time / 1000
         self.canvas.coords(self.fill, 0, 0, self.calc_passed_width(), self.height)
 
-    def update(self):
+    def start(self):
         if(Controller.isRunning):
             Controller.update(self.incrementPassedTime)
-
-    def start(self):
-        self.update()
 
     def reset(self):
         self.passedSeconds = 0
@@ -134,6 +128,14 @@ class ProgressBar:
 
 # Static ProgressBar variables
 ProgressBar.bars = []
+
+class SequenceProgressBar(ProgressBar):
+    def calc_passed_width(self):
+        if(self.passedSeconds >= Controller.sequences[Controller.currSequence]["seconds"]):
+            return self.width * Controller.sequences[Controller.currSequence]["seconds"]
+
+        currentlyPassed = (self.width / Controller.sequences[Controller.currSequence]["seconds"]) * self.passedSeconds
+        return currentlyPassed
 
 # SequenceTimer extends Timer
 class SequenceTimer(Timer):
@@ -170,15 +172,17 @@ class Controller:
         # Total max time
         Controller.totalTime = Controller.calc_total_time()
 
-        Controller.done = False
+        Controller.isDone = False
         Controller.isRunning = False
+        Controller.hasStarted = False
 
         # Create DB
         Controller.db = DB()
 
         # Start GUI
         Controller.gui = GUI()
-        # prevents code after this point
+
+        # preserves code running
         Controller.gui.window.mainloop()
 
     @staticmethod
@@ -191,62 +195,55 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequeceTimer, totalTimer):
+    def next_sequence(sequenceTimer, totalTimer, sequenceProgressbar):
         # Don't run again if process is done
         if(not Controller.isRunning):
             return False
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+            sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Controller.pause()
-            Controller.done = True
-            Controller.isRunning = False
+            Controller.isDone = True
 
             # Store session data in tiny DB
-            Controller.db.createEntry(Controller.startTimestamp, sequeceTimer.times, totalTimer.totalSeconds)
+            Controller.db.createEntry(Controller.startTimestamp, sequenceTimer.times, totalTimer.totalSeconds)
             # This is where we'll make the GUI show the final results
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequeceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceProgressbar.reset()
         Controller.currSequence += 1
 
     @staticmethod
-    def start():
-        Timer.start_timers()
-        if(not Controller.isRunning):
-            currentDateTime = datetime.now()
-            Controller.startTimestamp = datetime.timestamp(currentDateTime)
-
-        Controller.done = False
-        Controller.isRunning = True
-
-    @staticmethod
-    def pause():
-        Timer.pause_timers()
-        Controller.isRunning = False
-
-    @staticmethod
     def reset():
-        Controller.done = False
+        Controller.isDone = False
         Controller.isRunning = False
+        Controller.hasStarted = False
         Timer.reset_timers()
         ProgressBar.reset_bars()
         Controller.currSequence = 0
 
     @staticmethod
     def start():
-        Controller.isRunning = True
-        Timer.start_timers()
-        ProgressBar.start_bars()
+        if(not Controller.isRunning and not Controller.hasStarted):
+            currentDateTime = datetime.now()
+            Controller.startTimestamp = datetime.timestamp(currentDateTime)
+
+        if(not Controller.isRunning and not Controller.isDone):
+            Controller.isRunning = True
+            Controller.isDone = False
+            Controller.hasStarted = True
+            Timer.start_timers()
+            ProgressBar.start_bars()
 
     @staticmethod
     def pause():
         Controller.isRunning = False
 
     @staticmethod
-    def update(cb):
+    def update(cb=lambda time:[]):
         timeInterval = 50
         if(not Controller.isRunning):
             cb(timeInterval)
@@ -262,14 +259,15 @@ class GUI:
         self.title = "Trombolyseklokke"
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
+
         self.totalTimer = Timer(self, 10, 10, 60)
-        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
-        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, 60, "grey")
-        self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 60, border=5)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
+        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
+        self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
         self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.reset()])
         self.add_btn(text="Pause", color="#FFFF00", x=50, y=400, command=lambda:[Controller.pause()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer), self.sequenceProgressbar.reset()])
+        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
 
         # config
         logging.info("configuring GUI")
