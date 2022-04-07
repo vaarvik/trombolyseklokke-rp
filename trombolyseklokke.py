@@ -7,30 +7,37 @@ from tinydb import TinyDB, where
 from datetime import datetime
 
 class Text:
-    def __init__(self, text, x, y, window, size=18, centerAnchor=False):
+    def __init__(self, text, x, y, window, size=18, anchor="start"):
         self.x = x
         self.y = y
         self.size = size
-        self.centerAnchor = centerAnchor
+        self.anchor = anchor
         self.window = window
         self.label = Label(window, text=text, fg="#000000", bg="#000000", font=("Minion Pro Med", size))
         self.label.place(x=self.x, y=self.y)
-        window.after(10, lambda:self.update(text)) # Update with correct color and position after label has been initialized
+        self.update(text)
 
     def update(self, text):
-        self.label.config(text=text, fg="#FFFFFF")
-        if(self.centerAnchor):
+        self.text = text
+        self.label.config(text=self.text, fg="#FFFFFF")
+        self.window.after(10, lambda:self.position()) # Update with correct color and position after label has been initialized
+
+    def position(self):
+        self.label.config(text=self.text, fg="#FFFFFF")
+        if(self.anchor == "center"):
             self.label.place(x=self.x - self.label.winfo_width() / 2, y=self.y - self.label.winfo_height() / 2)
+        elif(self.anchor == "end"):
+            self.label.place(x=self.x - self.label.winfo_width(), y=self.y - self.label.winfo_height())
         else:
             self.label.place(x=self.x, y=self.y)
 
 class Timer:
-    def __init__(self, gui, x, y, textSize, centerAnchor=False):
+    def __init__(self, gui, x, y, textSize, anchor=False):
         logging.info("creating Timer")
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.text = Text(text=self.format_time(), size=textSize, x=x, y=y, window=self.GUIWindow, centerAnchor=centerAnchor)
+        self.text = Text(text=self.format_time(), size=textSize, x=x, y=y, window=self.GUIWindow, anchor=anchor)
 
         # Init for children
         self.init()
@@ -194,7 +201,7 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequenceTimer, totalTimer, sequenceProgressbar):
+    def next_sequence(sequenceTimer, totalTimer, sequenceProgressbar, text):
         # Don't run again if process is done
         if(not Controller.isRunning):
             return False
@@ -215,9 +222,10 @@ class Controller:
         sequenceProgressbar.reset()
         sequenceTimer.clear_timer()
         Controller.currSequence += 1
+        text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
 
     @staticmethod
-    def reset():
+    def reset(text):
         Controller.isDone = False
         Controller.isRunning = False
         Controller.hasStarted = False
@@ -225,7 +233,7 @@ class Controller:
         ProgressBar.reset_bars()
         Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
         Controller.currSequence = 0
-
+        text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
 
     @staticmethod
     def start():
@@ -243,13 +251,12 @@ class Controller:
     def pause():
         Controller.isRunning = False
 
-
     @staticmethod
-    def stop():
+    def stop(text):
         if(Controller.isRunning):
             return Controller.pause()
 
-        Controller.reset()
+        Controller.reset(text)
 
     @staticmethod
     def update(cb=lambda time:[]):
@@ -270,13 +277,15 @@ class GUI:
         self.height = self.window.winfo_screenheight()
 
         self.totalTimer = Timer(self, 10, 10, 60)
-        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, True)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, "center")
         self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
         self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
 
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
+        self.text = Text(text="Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), size=52, x=self.width - 40, y=self.height - 40, window=self.window, anchor="end")
+
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
+        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar, self.text)])
 
         # config
         logging.info("configuring GUI")
