@@ -20,12 +20,14 @@ class Text:
     def update(self, text):
         self.text = text
         self.label.config(text=self.text, fg="#FFFFFF")
-        self.window.after(10, lambda:self.position()) # Update with correct color and position after label has been initialized
+        self.window.after(20, lambda:self.position()) # Update with correct color and position after label has been initialized
 
     def position(self):
         self.label.config(text=self.text, fg="#FFFFFF")
         if(self.anchor == "center"):
             self.label.place(x=self.x - self.label.winfo_width() / 2, y=self.y - self.label.winfo_height() / 2)
+        elif(self.anchor == "center-top"):
+            self.label.place(x=self.x - self.label.winfo_width() / 2, y=self.y)
         elif(self.anchor == "end"):
             self.label.place(x=self.x - self.label.winfo_width(), y=self.y - self.label.winfo_height())
         else:
@@ -37,7 +39,7 @@ class Timer:
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.text = Text(text=self.format_time(), size=textSize, x=x, y=y, window=self.GUIWindow, anchor=anchor)
+        self.text = Text(text=self.format_time(self.totalSeconds), size=textSize, x=x, y=y, window=self.GUIWindow, anchor=anchor)
 
         # Init for children
         self.init()
@@ -48,9 +50,9 @@ class Timer:
     def init(self):
         False
 
-    def format_time(self):
-        seconds = math.floor(self.totalSeconds % 60)
-        minutes = math.floor(self.totalSeconds / 60)
+    def format_time(self, totalSeconds):
+        seconds = math.floor(totalSeconds % 60)
+        minutes = math.floor(totalSeconds / 60)
 
         if(minutes < 10):
             minutes = "0" + str(minutes)
@@ -70,9 +72,9 @@ class Timer:
     def update_timer(self, time):
         if(Controller.isRunning):
             self.incrementSeconds(time)
-            self.text.update(self.format_time())
+            self.text.update(self.format_time(self.totalSeconds))
         else:
-            self.text.update(self.format_time())
+            self.text.update(self.format_time(self.totalSeconds))
 
     def reset_timer(self):
         self.totalSeconds = 0
@@ -214,7 +216,8 @@ class Controller:
 
             # Store session data in tiny DB
             Controller.db.createEntry(Controller.month, sequenceTimer.times, totalTimer.totalSeconds)
-            # This is where we'll make the GUI show the final results
+
+            Controller.gui.show_end_screen()
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
@@ -257,6 +260,7 @@ class Controller:
             return Controller.pause()
 
         Controller.reset(text)
+        Controller.gui.hide_end_screen()
 
     @staticmethod
     def update(cb=lambda time:[]):
@@ -275,17 +279,11 @@ class GUI:
         self.title = "Trombolyseklokke"
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
+        self.summaryTexts = []
 
-        self.totalTimer = Timer(self, 10, 10, 60)
-        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, "center")
-        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
-        self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
+        self.show_timer()
 
-        self.text = Text(text="Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), size=52, x=self.width - 40, y=self.height - 40, window=self.window, anchor="end")
-
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
-        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar, self.text)])
+        self.overlay = Canvas(self.window, width=self.width, height=self.height, bd=0, highlightthickness=0, relief='ridge', bg="#000000")
 
         # config
         logging.info("configuring GUI")
@@ -308,6 +306,38 @@ class GUI:
     def add_btn(self, text, color, x, y, command):
         btn = Button(self.window, text=text, command=command, bg=color)
         btn.place(x=x, y=y)
+
+    def show_end_screen(self):
+        self.overlay.place(x=0, y=0)
+
+        text = totalTimeText = Text(text="Totaltid: " + self.totalTimer.format_time(self.totalTimer.totalSeconds), size=70, x=self.width / 2, y=150, window=self.window, anchor="center-top")
+        self.summaryTexts.append(text)
+
+        for index, sequence in enumerate(self.sequenceTimer.times):
+            text = Text(text=sequence["name"] + ": " + self.sequenceTimer.format_time(sequence['seconds']), size=36, x=self.width / 2, y=150 * 1.5 + (index + 1) * 100, window=self.window, anchor="center-top")
+            self.summaryTexts.append(text)
+
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
+        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
+        self.overlay.pack()
+
+    def hide_end_screen(self):
+        for text in self.summaryTexts:
+            text.label.destroy()
+
+        self.overlay.pack_forget()
+
+    def show_timer(self):
+        self.totalTimer = Timer(self, 10, 10, 60)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, "center")
+        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
+        self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
+
+        self.text = Text(text="Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), size=52, x=self.width - 40, y=self.height - 40, window=self.window, anchor="end")
+
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
+        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
+        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar, self.text)])
 
 class DB:
     def __init__(self):
