@@ -172,7 +172,7 @@ class Controller:
         configFile.close()
 
         Controller.currSequence = 0
-        Controller.startTimestamp = 0
+        Controller.month = 0
         Controller.sequences = Controller.config["sequences"]
 
         # Total max time
@@ -213,7 +213,7 @@ class Controller:
             Controller.isDone = True
 
             # Store session data in tiny DB
-            Controller.db.createEntry(Controller.startTimestamp, sequenceTimer.times, totalTimer.totalSeconds)
+            Controller.db.createEntry(Controller.month, sequenceTimer.times, totalTimer.totalSeconds)
             # This is where we'll make the GUI show the final results
             return True
 
@@ -238,8 +238,8 @@ class Controller:
     @staticmethod
     def start():
         if(not Controller.isRunning and not Controller.hasStarted):
-            currentDateTime = datetime.now()
-            Controller.startTimestamp = datetime.timestamp(currentDateTime)
+            currentDay = datetime.today()
+            Controller.month = currentDay.month
 
         if(not Controller.isRunning and not Controller.isDone):
             Controller.isRunning = True
@@ -313,11 +313,8 @@ class DB:
     def __init__(self):
         self.db = TinyDB('db.json')
 
-    def createEntry(self, startTimestamp, sequences, totalSeconds):
-        return self.db.insert({"startTimestamp": startTimestamp, "sequences": sequences, "totalSeconds": totalSeconds})
-
-    def getEntry(self, startTimestamp):
-        return self.db.search(where("startTimestamp") == startTimestamp)
+    def createEntry(self, month, sequences, totalSeconds):
+        return self.db.insert({"month": month, "sequences": sequences, "totalSeconds": totalSeconds})
 
 logging.basicConfig(level=logging.INFO)
 
