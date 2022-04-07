@@ -199,7 +199,6 @@ class Controller:
             sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
             Controller.pause()
             Controller.isDone = True
-            Controller.isRunning = False
 
             # Store session data in tiny DB
             Controller.db.createEntry(Controller.startTimestamp, sequenceTimer.times, totalTimer.totalSeconds)
