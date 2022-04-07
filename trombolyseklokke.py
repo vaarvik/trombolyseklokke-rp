@@ -7,24 +7,30 @@ from tinydb import TinyDB, where
 from datetime import datetime
 
 class Text:
-    def __init__(self, text, x, y, window):
+    def __init__(self, text, x, y, window, size=18, centerAnchor=False):
         self.x = x
         self.y = y
+        self.size = size
+        self.centerAnchor = centerAnchor
         self.window = window
-        self.label = Label(window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
-        self.label.place(x=x, y=y)
+        self.label = Label(window, text=text, fg="#000000", bg="#000000", font=("Minion Pro Med", size))
+        self.label.place(x=self.x, y=self.y)
+        window.after(10, lambda:self.update(text)) # Update with correct color and position after label has been initialized
 
     def update(self, text):
-        self.label = Label(self.window, text=text, fg="#FFFFFF", bg="#000000", font=("Helvetica", 18))
-        self.label.place(x=self.x, y=self.y)
+        self.label.config(text=text, fg="#FFFFFF")
+        if(self.centerAnchor):
+            self.label.place(x=self.x - self.label.winfo_width() / 2, y=self.y - self.label.winfo_height() / 2)
+        else:
+            self.label.place(x=self.x, y=self.y)
 
 class Timer:
-    def __init__(self, gui, x, y):
+    def __init__(self, gui, x, y, textSize, centerAnchor=False):
         logging.info("creating Timer")
         self.totalSeconds = 0
         self.GUIWindow = gui.window
         self.gui = gui
-        self.text = Text(text=self.totalSeconds, x=x, y=y, window=self.GUIWindow)
+        self.text = Text(text=self.format_time(), size=textSize, x=x, y=y, window=self.GUIWindow, centerAnchor=centerAnchor)
 
         # Init for children
         self.init()
@@ -88,10 +94,10 @@ class ProgressBar:
         self.maxSeconds = maxSeconds
         self.gui = gui
         self.passedSeconds = 0
-        self.canvas = Canvas(self.gui.window, width=width, height=height - border, bd=border, highlightthickness=0, relief='ridge', bg=bg)
+        self.canvas = Canvas(self.gui.window, width=width, height=height - border, bd=0, highlightthickness=border, highlightbackground="#555555", relief='ridge', bg=bg)
         self.canvas.place(x=self.x, y=self.y)
-        self.canvas.create_rectangle(0, 0, self.width, self.height, fill="", outline="grey", width=0)
-        self.fill = self.canvas.create_rectangle(0, 0, self.calc_passed_width(), self.height, fill="blue", outline="", width=0)
+        self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
+        self.fill = self.canvas.create_rectangle(0, 0, self.calc_passed_width(), self.height, fill="#005AE0", outline="", width=0)
 
         ProgressBar.bars.append(self)
 
@@ -256,14 +262,14 @@ class GUI:
         self.title = "Trombolyseklokke"
         self.width = self.window.winfo_screenwidth()
         self.height = self.window.winfo_screenheight()
-        self.totalTimer = Timer(self, 10, 10)
-        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2)
-        self.totalProgressbar = ProgressBar(self, 0, 2, self.width, 2, 60, "grey")
-        self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 600 / 2, self.height / 2 - 40 / 2, 600, 40, 60, border=4)
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=50, command=lambda:[Controller.reset()])
-        self.add_btn(text="Pause", color="#FFFF00", x=100, y=100, command=lambda:[Controller.pause()])
-        self.add_btn(text="Start", color="#FFFFFF", x=150, y=150, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=200, y=200, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer), self.sequenceProgressbar.reset()])
+        self.totalTimer = Timer(self, 10, 10, 60)
+        self.sequeceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
+        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, 60, "grey")
+        self.sequenceProgressbar = ProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 60, border=5)
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.reset()])
+        self.add_btn(text="Pause", color="#FFFF00", x=50, y=400, command=lambda:[Controller.pause()])
+        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
+        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequeceTimer, self.totalTimer), self.sequenceProgressbar.reset()])
 
         # config
         logging.info("configuring GUI")
