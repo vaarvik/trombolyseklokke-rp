@@ -242,6 +242,14 @@ class Controller:
     def pause():
         Controller.isRunning = False
 
+
+    @staticmethod
+    def stop():
+        if(Controller.isRunning):
+            return Controller.pause()
+
+        Controller.reset()
+
     @staticmethod
     def update(cb=lambda time:[]):
         timeInterval = 50
@@ -264,8 +272,7 @@ class GUI:
         self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
         self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
         self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.reset()])
-        self.add_btn(text="Pause", color="#FFFF00", x=50, y=400, command=lambda:[Controller.pause()])
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
 
