@@ -60,7 +60,7 @@ class Timer:
     def incrementSeconds(self, time):
         self.totalSeconds += time / 1000
 
-    def start_timer(self):
+    def update_timer(self):
         if(Controller.isRunning):
             Controller.update(lambda time:[self.incrementSeconds(time), self.text.update(self.format_time())])
         else:
@@ -75,9 +75,9 @@ class Timer:
             timer.reset_timer()
 
     @staticmethod
-    def start_timers():
+    def update_timers():
         for timer in Timer.timers:
-            timer.start_timer()
+            timer.update_timer()
 
 # Static Timer variables
 Timer.timers = []
@@ -109,9 +109,8 @@ class ProgressBar:
         self.passedSeconds += time / 1000
         self.canvas.coords(self.fill, 0, 0, self.calc_passed_width(), self.height)
 
-    def start(self):
-        if(Controller.isRunning):
-            Controller.update(self.incrementPassedTime)
+    def update(self):
+        Controller.update(self.incrementPassedTime)
 
     def reset(self):
         self.passedSeconds = 0
@@ -122,9 +121,9 @@ class ProgressBar:
             bar.reset()
 
     @staticmethod
-    def start_bars():
+    def update_bars():
         for bar in ProgressBar.bars:
-            bar.start()
+            bar.update()
 
 # Static ProgressBar variables
 ProgressBar.bars = []
@@ -223,7 +222,10 @@ class Controller:
         Controller.hasStarted = False
         Timer.reset_timers()
         ProgressBar.reset_bars()
+        Timer.update_timers()
+        ProgressBar.update_bars()
         Controller.currSequence = 0
+
 
     @staticmethod
     def start():
@@ -235,8 +237,8 @@ class Controller:
             Controller.isRunning = True
             Controller.isDone = False
             Controller.hasStarted = True
-            Timer.start_timers()
-            ProgressBar.start_bars()
+            Timer.update_timers()
+            ProgressBar.update_bars()
 
     @staticmethod
     def pause():
