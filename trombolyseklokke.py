@@ -252,6 +252,7 @@ class Controller:
 
         if(Controller.isDone):
             Controller.stop()
+            Controller.start()
 
     @staticmethod
     def pause():
