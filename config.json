@@ -2,15 +2,19 @@
 	"sequences": [
 		{
 			"name": "Blodprøver",
-			"seconds": 10
+			"seconds": 120
 		},
 		{
-			"name": "Brief",
-			"seconds": 50
+			"name": "Klinisk undersøkelse",
+			"seconds": 150
 		},
 		{
-			"name": "CTA",
-			"seconds": 5
+			"name": "CT",
+			"seconds": 480
+		},
+		{
+			"name": "Trombolyse gitt",
+			"seconds": 150
 		}
 	]
 }
