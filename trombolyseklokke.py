@@ -225,10 +225,10 @@ class Controller:
         sequenceProgressbar.reset()
         sequenceTimer.clear_timer()
         Controller.currSequence += 1
-        text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
+        Controller.gui.update()
 
     @staticmethod
-    def reset(text):
+    def reset():
         Controller.isDone = False
         Controller.isRunning = False
         Controller.hasStarted = False
@@ -236,7 +236,7 @@ class Controller:
         ProgressBar.reset_bars()
         Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
         Controller.currSequence = 0
-        text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
+        Controller.gui.update()
 
     @staticmethod
     def start():
@@ -250,16 +250,19 @@ class Controller:
             Controller.hasStarted = True
             Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
 
+        if(Controller.isDone):
+            Controller.stop()
+
     @staticmethod
     def pause():
         Controller.isRunning = False
 
     @staticmethod
-    def stop(text):
+    def stop():
         if(Controller.isRunning):
             return Controller.pause()
 
-        Controller.reset(text)
+        Controller.reset()
         Controller.gui.hide_end_screen()
 
     @staticmethod
@@ -296,9 +299,8 @@ class GUI:
         # temporary hotkey to close window during dev
         self.window.bind("<Escape>", self.end_fullscreen)
 
-    def seconds_converter(self, seconds):
-        maximum = seconds * 1000 / 60
-        return maximum
+    def update(self):
+        self.text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
 
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
@@ -317,7 +319,7 @@ class GUI:
             text = Text(text=sequence["name"] + ": " + self.sequenceTimer.format_time(sequence['seconds']), size=36, x=self.width / 2, y=150 * 1.5 + (index + 1) * 100, window=self.window, anchor="center-top")
             self.summaryTexts.append(text)
 
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.overlay.pack()
 
@@ -335,7 +337,7 @@ class GUI:
 
         self.text = Text(text="Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), size=52, x=self.width - 40, y=self.height - 40, window=self.window, anchor="end")
 
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop(self.text)])
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar, self.text)])
 
