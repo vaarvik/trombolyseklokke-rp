@@ -60,9 +60,10 @@ class Timer:
     def incrementSeconds(self, time):
         self.totalSeconds += time / 1000
 
-    def start_timer(self):
+    def update_timer(self, time):
         if(Controller.isRunning):
-            Controller.update(lambda time:[self.incrementSeconds(time), self.text.update(self.format_time())])
+            self.incrementSeconds(time)
+            self.text.update(self.format_time())
         else:
             self.text.update(self.format_time())
 
@@ -75,9 +76,9 @@ class Timer:
             timer.reset_timer()
 
     @staticmethod
-    def start_timers():
+    def update_timers(time):
         for timer in Timer.timers:
-            timer.start_timer()
+            timer.update_timer(time)
 
 # Static Timer variables
 Timer.timers = []
@@ -109,9 +110,8 @@ class ProgressBar:
         self.passedSeconds += time / 1000
         self.canvas.coords(self.fill, 0, 0, self.calc_passed_width(), self.height)
 
-    def start(self):
-        if(Controller.isRunning):
-            Controller.update(self.incrementPassedTime)
+    def update(self, time):
+        self.incrementPassedTime(time)
 
     def reset(self):
         self.passedSeconds = 0
@@ -122,9 +122,9 @@ class ProgressBar:
             bar.reset()
 
     @staticmethod
-    def start_bars():
+    def update_bars(time):
         for bar in ProgressBar.bars:
-            bar.start()
+            bar.update(time)
 
 # Static ProgressBar variables
 ProgressBar.bars = []
@@ -143,12 +143,11 @@ class SequenceTimer(Timer):
         # Keep track of the time for each sequence
         self.times = []
 
-    def next_sequence(self, currSequence):
+    def save_time(self, currSequence):
         self.times.append({
             "seconds": self.totalSeconds,
             "name": currSequence["name"]
         })
-        self.clear_timer()
 
     def clear_timer(self):
         self.totalSeconds = 0
@@ -202,7 +201,7 @@ class Controller:
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+            sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
             Controller.pause()
             Controller.isDone = True
 
@@ -212,8 +211,9 @@ class Controller:
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
         sequenceProgressbar.reset()
+        sequenceTimer.clear_timer()
         Controller.currSequence += 1
 
     @staticmethod
@@ -223,7 +223,9 @@ class Controller:
         Controller.hasStarted = False
         Timer.reset_timers()
         ProgressBar.reset_bars()
+        Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
         Controller.currSequence = 0
+
 
     @staticmethod
     def start():
@@ -235,16 +237,23 @@ class Controller:
             Controller.isRunning = True
             Controller.isDone = False
             Controller.hasStarted = True
-            Timer.start_timers()
-            ProgressBar.start_bars()
+            Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
 
     @staticmethod
     def pause():
         Controller.isRunning = False
 
+
+    @staticmethod
+    def stop():
+        if(Controller.isRunning):
+            return Controller.pause()
+
+        Controller.reset()
+
     @staticmethod
     def update(cb=lambda time:[]):
-        timeInterval = 50
+        timeInterval = 1000
         if(not Controller.isRunning):
             cb(timeInterval)
             Controller.gui.window.update()
@@ -261,11 +270,11 @@ class GUI:
         self.height = self.window.winfo_screenheight()
 
         self.totalTimer = Timer(self, 10, 10, 60)
-        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, True)
         self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
         self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.reset()])
-        self.add_btn(text="Pause", color="#FFFF00", x=50, y=400, command=lambda:[Controller.pause()])
+
+        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
 
