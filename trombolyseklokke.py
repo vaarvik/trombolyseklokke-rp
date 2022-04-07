@@ -143,12 +143,11 @@ class SequenceTimer(Timer):
         # Keep track of the time for each sequence
         self.times = []
 
-    def next_sequence(self, currSequence):
+    def save_time(self, currSequence):
         self.times.append({
             "seconds": self.totalSeconds,
             "name": currSequence["name"]
         })
-        self.clear_timer()
 
     def clear_timer(self):
         self.totalSeconds = 0
@@ -202,7 +201,7 @@ class Controller:
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+            sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
             Controller.pause()
             Controller.isDone = True
 
@@ -212,8 +211,9 @@ class Controller:
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequenceTimer.next_sequence(Controller.sequences[Controller.currSequence])
+        sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
         sequenceProgressbar.reset()
+        sequenceTimer.clear_timer()
         Controller.currSequence += 1
 
     @staticmethod
@@ -269,9 +269,10 @@ class GUI:
         self.height = self.window.winfo_screenheight()
 
         self.totalTimer = Timer(self, 10, 10, 60)
-        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60*4, True)
+        self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, True)
         self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
         self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
+
         self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
         self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar)])
