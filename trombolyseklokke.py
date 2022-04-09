@@ -17,10 +17,13 @@ class Text:
         self.label.place(x=self.x, y=self.y)
         self.update(text)
 
-    def update(self, text):
+    def update(self, text, flash=False):
         self.text = text
-        self.label.config(text=self.text, fg="#FFFFFF")
-        self.window.after(20, lambda:self.position()) # Update with correct color and position after label has been initialized
+        if(flash):
+            self.label.config(text=self.text, fg="#000000")
+        else:
+            self.label.config(text=self.text)
+        self.window.after(500, lambda:self.position()) # Update with correct color and position after label has been initialized
 
     def position(self):
         self.label.config(text=self.text, fg="#FFFFFF")
@@ -301,7 +304,7 @@ class GUI:
         self.window.bind("<Escape>", self.end_fullscreen)
 
     def update(self):
-        self.text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper())
+        self.text.update("Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), True)
 
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
