@@ -171,8 +171,6 @@ class SequenceTimer(Timer):
 
 class ButtonListener:
     def __init__(self, input, command):
-        #while True:
-            #if GPIO.input(input) == GPIO.HIGH:
         GPIO.add_event_detect(input, GPIO.RISING, callback=lambda e:command())
 
 # Static Controller class
@@ -207,22 +205,18 @@ class Controller:
         GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-
-        #ButtonListener(27, lambda:[Controller.next_sequence()])
         ButtonListener(13, lambda:[Controller.start()])
-        #ButtonListener(25, lambda:[Controller.stop()])
 
         def on_next_sequence_press(channel):
             ButtonListener(Controller.next_sequence())
-
 
         GPIO.add_event_detect(27, GPIO.FALLING, callback=on_next_sequence_press, bouncetime=5000)
 
         def on_stop_press(channel):
             ButtonListener(Controller.stop())
 
-
         GPIO.add_event_detect(25, GPIO.FALLING, callback=on_stop_press, bouncetime=1500)
+
         # preserves code running
         Controller.gui.window.mainloop()
 
