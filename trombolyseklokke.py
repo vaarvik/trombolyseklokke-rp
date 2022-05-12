@@ -5,6 +5,7 @@ import math
 import json
 from tinydb import TinyDB, where
 from datetime import datetime
+import RPi.GPIO as GPIO
 
 class Text:
     def __init__(self, text, x, y, window, size=18, anchor="start"):
@@ -168,6 +169,10 @@ class SequenceTimer(Timer):
         self.clear_timer()
         self.times = []
 
+class ButtonListener:
+    def __init__(self, input, command):
+        GPIO.add_event_detect(input, GPIO.RISING, callback=lambda e:command())
+
 # Static Controller class
 class Controller:
     def __init__(self):
@@ -193,6 +198,25 @@ class Controller:
         # Start GUI
         Controller.gui = GUI()
 
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
+
+        GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        ButtonListener(13, lambda:[Controller.start()])
+
+        def on_next_sequence_press(channel):
+            ButtonListener(Controller.next_sequence())
+
+        GPIO.add_event_detect(27, GPIO.FALLING, callback=on_next_sequence_press, bouncetime=5000)
+
+        def on_stop_press(channel):
+            ButtonListener(Controller.stop())
+
+        GPIO.add_event_detect(25, GPIO.FALLING, callback=on_stop_press, bouncetime=1500)
+
         # preserves code running
         Controller.gui.window.mainloop()
 
@@ -206,27 +230,27 @@ class Controller:
         return totalTime
 
     @staticmethod
-    def next_sequence(sequenceTimer, totalTimer, sequenceProgressbar, text):
+    def next_sequence():
         # Don't run again if process is done
         if(not Controller.isRunning):
             return False
 
         # Stop if currentSequence has passed the number of sequences given in the config file
         if(Controller.currSequence + 1 >= len(Controller.sequences)):
-            sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
+            Controller.gui.sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
             Controller.pause()
             Controller.isDone = True
 
             # Store session data in tiny DB
-            Controller.db.createEntry(Controller.month, sequenceTimer.times, totalTimer.totalSeconds)
+            Controller.db.createEntry(Controller.month, Controller.gui.sequenceTimer.times, Controller.gui.totalTimer.totalSeconds)
 
             Controller.gui.show_end_screen()
             return True
 
         # Go to the next sequence when program is not done and there is another sequence available
-        sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
-        sequenceProgressbar.reset()
-        sequenceTimer.clear_timer()
+        Controller.gui.sequenceTimer.save_time(Controller.sequences[Controller.currSequence])
+        Controller.gui.sequenceProgressbar.reset()
+        Controller.gui.sequenceTimer.clear_timer()
         Controller.currSequence += 1
         Controller.gui.update()
 
@@ -253,7 +277,7 @@ class Controller:
             Controller.hasStarted = True
             Controller.update(lambda time:[Timer.update_timers(time), ProgressBar.update_bars(time)])
 
-        if(Controller.isDone):
+        if(Controller.isDone and not Controller.isRunning):
             Controller.stop()
             Controller.start()
 
@@ -309,10 +333,6 @@ class GUI:
     def end_fullscreen(self, event):
         self.window.attributes("-fullscreen", False)
 
-    def add_btn(self, text, color, x, y, command):
-        btn = Button(self.window, text=text, command=command, bg=color)
-        btn.place(x=x, y=y)
-
     def show_end_screen(self):
         self.overlay.place(x=0, y=0)
 
@@ -323,8 +343,6 @@ class GUI:
             text = Text(text=sequence["name"] + ": " + self.sequenceTimer.format_time(sequence['seconds']), size=36, x=self.width / 2, y=150 * 1.5 + (index + 1) * 100, window=self.window, anchor="center-top")
             self.summaryTexts.append(text)
 
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
-        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
         self.overlay.pack()
 
     def hide_end_screen(self):
@@ -336,14 +354,10 @@ class GUI:
     def show_timer(self):
         self.totalTimer = Timer(self, 10, 10, 60)
         self.sequenceTimer = SequenceTimer(self, self.width / 2, self.height / 2, 60 * 4, "center")
-        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 4, Controller.totalTime, "grey")
+        self.totalProgressbar = ProgressBar(self, 0, 4, self.width, 8, Controller.totalTime, "grey")
         self.sequenceProgressbar = SequenceProgressBar(self, self.width / 2 - 800 / 2, self.height / 1.33 - 50 / 2, 800, 50, 0, border=5)
 
         self.text = Text(text="Steg " + str(Controller.currSequence + 1) + ": " + Controller.sequences[Controller.currSequence]["name"].upper(), size=52, x=self.width - 40, y=self.height - 40, window=self.window, anchor="end")
-
-        self.add_btn(text="Stop", color="#FF0000", x=50, y=300, command=lambda:[Controller.stop()])
-        self.add_btn(text="Start", color="#FFFFFF", x=50, y=500, command=lambda:[Controller.start()])
-        self.add_btn(text="Next", color="#FFFFFF", x=50, y=600, command=lambda:[Controller.next_sequence(self.sequenceTimer, self.totalTimer, self.sequenceProgressbar, self.text)])
 
 class DB:
     def __init__(self):
