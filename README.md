@@ -9,6 +9,7 @@ Trombolyseklokken er utviklet i Python og er ment til å kjøre på en Rasberry 
 Merk at denne installsjonsguiden ikke tar hensyn til at man har en annen versjon av python installert (som for eksempel python 2). Hvis dette er tilfellet kan det være man må erstatte pip-kommandoen med "python3 -m pip" og "python" med "python3".
 1. For å kjøre koden kreves det at man har python3 installert. Vi benyttet oss av python 3.10.4 i utviklingen av denne løsningen. Python3 kan installeres her: https://www.python.org/downloads/
 Påse at tkinter og pip blir installert samtidig som python3 blir installert.
+
 ![pip og tkinter markert i installasjonen av python3](/installasjonsbilde.png)
 2. Klon dette repo-et fra github.
 3. Installer pakkene som kreves for å kjøre koden. Dette gjøres ved åpne en terminal inne i mappen til prosjektet og skrive følgende:
