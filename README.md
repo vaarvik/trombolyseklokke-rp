@@ -11,6 +11,7 @@ Merk at denne installsjonsguiden ikke tar hensyn til at man har en annen versjon
 Påse at tkinter og pip blir installert samtidig som python3 blir installert.
 
 ![pip og tkinter markert i installasjonen av python3](/installasjonsbilde.png)
+
 2. Klon dette repo-et fra github.
 3. Installer pakkene som kreves for å kjøre koden. Dette gjøres ved åpne en terminal inne i mappen til prosjektet og skrive følgende:
 ```
