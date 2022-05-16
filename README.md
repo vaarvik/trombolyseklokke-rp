@@ -3,7 +3,7 @@ Dette er klokke/timer som kan brukes under behandling av slag. Målet med klokke
 
 Trombolyseklokken er utviklet i Python og er ment til å kjøre på en Rasberry Pi. I den fysiske løsningen skal knapper være festet til Rasberry Pi-en som kan starte, stoppe og oppdatere klokken.
 
-**MERK:** På grunn av at programmet bruker biblioteket RPi.GPIO som kun kan installeres på en Raspberry Pi, vil det ikke være mulig å kjøre programmet på en annen type datamaskin. Et alternativ er å bruke en virtuell maskin (VM) via for eksempel Oracle Virtual Box og installere operativsystemet til Raspberry Pi. Det vil dog ikke være mulig å starte timerne i en VM ettersom programmet krever at det er eksterne knapper koblet til.
+**MERK:** På grunn av at programmet bruker biblioteket RPi.GPIO som kun kan installeres på en Raspberry Pi, vil det ikke være mulig å kjøre programmet på en annen type datamaskin. Et alternativ er å bruke en virtuell maskin (VM) via for eksempel Oracle Virtual Box og installere operativsystemet til Raspberry Pi. Det vil dog ikke være mulig å starte timerne i en VM ettersom programmet krever at det er eksterne knapper koblet til. Det er mulig å sjekke ut en gamlere versjon av prototypen dersom man ønsker å teste prototypen uten en Raspberry Pi. Følgende commit vil for eksempel fungere til dette: https://github.com/vaarvik/trombolyseklokke-rp/tree/b5d57132610143b4f4357901b36c93681046ec18
 
 ## Installasjon
 Merk at denne installsjonsguiden ikke tar hensyn til at man har en annen versjon av python installert (som for eksempel python 2). Hvis dette er tilfellet kan det være man må erstatte pip-kommandoen med "python3 -m pip" og "python" med "python3".
